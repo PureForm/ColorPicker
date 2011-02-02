@@ -2,8 +2,8 @@
 
 // By:          http://www.colourlovers.com/
 // Author:      Chris Williams - http://www.colourlovers.com/about#chris-williams
-// Version:     1.0
-// Requires:    Prototype 1.6+ [http://www.prototypejs.org/] and script.aculo.us 1.8+ [http://script.aculo.us/] -- only the "effects" and "builder" modules are needed
+// Version:     1.0.1
+// Requires:    Prototype 1.6+ [http://www.prototypejs.org/] and script.aculo.us 1.8+ [http://script.aculo.us/] -- only the "effects", "builder" and "dragdrop" modules are needed
 // License:     http://creativecommons.org/licenses/by-sa/3.0/us/
 // Tested:      Firefox 3.5 - 3.6, Safari 4.0, Opera 10, Chrome 3.0 - 4.0, Internet Explorer 8
 
@@ -66,15 +66,15 @@
     // CALLBACKS //
     There are callbacks set up for the following events:
     - change:       called each time the value of the picker is changed
-    - change-start: called when the user starts to change the value of the picker [the very first "change" to the picker]
-    - change-end:   called when the user is done changing the value of the picker [the very last "change" to the picker]
+    - change-start: called when the user starts to change the value of the picker [the very first "change" to the picker] -- For drag events only!
+    - change-end:   called when the user is done changing the value of the picker [the very last "change" to the picker] -- For drag events only!
     - move:         called when the picker has been moved on the screen
-    - move-start:   called when the user starts to change the position of the picker [they're begun dragging the picker]
+    - move-start:   called when the user starts to change the position of the picker [they've begun dragging the picker]
     - move-end:     called when the user is done changing the position of the picker [they're done dragging the picker]
     - show:         called when the picker has been shown
     - hide:         called when the picker has been hidden
 
-    These callbacks return these values ar the first parameter:
+    These callbacks return these values as the first parameter:
     - change:       {_hex: "ffee00",_rgb: [1,0.9333,0],_hsv: [0.1555,1,1]}
     - change-start: {_hex: "ffee00",_rgb: [1,0.9333,0],_hsv: [0.1555,1,1]}
     - change-end:   {_hex: "ffee00",_rgb: [1,0.9333,0],_hsv: [0.1555,1,1]}
@@ -109,14 +109,14 @@
         _ColorPicker = new CL.ColorPicker();
         var _callbackIndex = _ColorPicker.registerCallback("change",this.onChange.bind(this));
         _ColorPicker.removeCallback("change",_callbackIndex); // To remove just _callbackIndex
-        _ColorPicker.removeCallback("change"); // To remove just all "change" callbacks
+        _ColorPicker.removeCallback("change"); // To remove all "change" callbacks
     </code>
 
-    * The event passed should be the same even captured by the event listener you had set up to call _ColorPicker.showAtClickEvent(), i.e.
+    * The event passed should be the same event captured by the event listener you had set up to call _ColorPicker.showAtClickEvent(), i.e.
     <code>
         Event.observe($("my-cool-div"),"click",function(_event) {
             alert("You clicked on my cool div! Here's the color picker!");
-            _ColorPicker.showAtClickEvent(_event,10,-5); // show color picker relative to the click event and move it 10 px to the right, and up 5px.
+            _ColorPicker.showAtClickEvent(_event,10,-5); // show color picker relative to the click event and move it 10px to the right, and up 5px.
         }.bind(this));
     </code>
 */
@@ -146,7 +146,7 @@ CL.ColorPicker = Class.create({
 		this._relatedElements				= [];
 		this._lastHsvValue					= [];
 		this._ui							= {_pickerCumulativeOffset: {left: 0,top: 0}};
-		this._instanceID					= (new Date()).getTime();
+		this._instanceID					= (new Date()).getTime().toString() + Math.floor(Math.random() * 1000000).toString();
 		this._position						= "absolute";
 		this._hideOnOutsideMouseDown		= true;
 
@@ -171,18 +171,10 @@ CL.ColorPicker = Class.create({
 		this._appName					= _args._appName || "COLOURlovers_ColorPicker";
 		this._embeddedContainerID		= _args._embeddedContainerID || this._embeddedContainerID;
 		this._position					= _args._position || this._position;
-		this._hideOnOutsideMouseDown	= _args._hideOnOutsideMouseDown || this._hideOnOutsideMouseDown;
-
+		this._hideOnOutsideMouseDown	= (_args._hideOnOutsideMouseDown !== undefined) ? _args._hideOnOutsideMouseDown : this._hideOnOutsideMouseDown;
 		this.onReady					= _args.onReady || Prototype.emptyFunction;
-
 		this._containerID				= (this._appName + "_instance_" + this._instanceID.toString());
 		(new Image()).src				= this._uiImageURL; // Pre-load, please
-
-		Event.observe(window,"resize",function(_event) {
-			if (this._status !== "initializing") {
-				this.pickerOnEnd();
-			}
-		}.bind(this));
 
 		document.observe("mousedown",this.mouseDown.bind(this));
 
@@ -206,7 +198,7 @@ CL.ColorPicker = Class.create({
 		}.bind(this));
 
 		document.observe("keyup",function(_event) {
-			if ((this._status === "visible") && ([38,40].in_array(_event.keyCode) === true)) {
+			if ((this._status === "visible") && ([38,40].indexOf(_event.keyCode) !== -1)) {
 				if (this._lastKeyboardEventCheckTime > 0) {
 					this.keyboardChangeEndHandler();
 				}
@@ -214,8 +206,8 @@ CL.ColorPicker = Class.create({
 		}.bind(this));
 
 		document.observe("dom:loaded",function(_event) {
-			var _uiZIndex			= this.zIndex();
-			var _pickerZIndex		= this.zIndex();
+			var _uiZIndex			= ++this._zIndex;
+			var _pickerZIndex		= ++this._zIndex;
 
 			var _defaultStyles		= "clear:none;border:0 none;overflow:hidden;outline:0;top:0;left:0;right:0;bottom:0;visibility:visible;max-width:none;min-width:none;max-height:none;min-height:none;";
 
@@ -227,36 +219,36 @@ CL.ColorPicker = Class.create({
 			}
 
 			var _ui = Builder.node("div",{id: this._containerID,style: (_defaultStyles + "z-index:" + _uiZIndex.toString() + ";display:none;width:382px;height:349px;margin:0;padding:0;background:transparent url(" + this._uiImageURL + ") no-repeat scroll 0 0;")},[
-				Builder.node("div",{className: (this._appName + "_close-btn"),style: (_defaultStyles + "display:none;width:22px;height:22px;margin:0 361px 20px 0;padding:0;cursor:pointer;background:transparent url(" + this._uiImageURL + ") no-repeat scroll -383px -275px;")}),
-				Builder.node("div",{className: (this._appName + "_close-btn-shim"),style: (_defaultStyles + "display:none;width:22px;height:22px;margin:0 361px 20px 0;padding:0;")}),
+				Builder.node("div",{className: (this._containerID + "_close-btn"),style: (_defaultStyles + "display:none;width:22px;height:22px;margin:0 361px 20px 0;padding:0;cursor:pointer;background:transparent url(" + this._uiImageURL + ") no-repeat scroll -383px -275px;")}),
+				Builder.node("div",{className: (this._containerID + "_close-btn-shim"),style: (_defaultStyles + "display:none;width:22px;height:22px;margin:0 361px 20px 0;padding:0;")}),
 				Builder.node("a",{href: "http://www.colourlovers.com/",target: "_blank",title: "COLOURlovers",style: (_defaultStyles + "display: block;float:left;width:100px;height:22px;margin: 0 0 0 14px;")}),
-				Builder.node("input",{id: (this._appName + "hex-field"),maxlength: 6,style: (_inputTextStyles + "width:53px;height:15px;margin: 0 0 0 12px;")}),
+				Builder.node("input",{id: (this._containerID + "hex-field"),maxlength: 6,style: (_inputTextStyles + "width:53px;height:15px;margin: 0 0 0 12px;")}),
 
-				Builder.node("input",{id: (this._appName + "rgb-r-field"),maxlength: 3,style: (_inputTextStyles + "width:22px;height:15px;margin: 0 0 0 16px;")}),
-				Builder.node("input",{id: (this._appName + "rgb-g-field"),maxlength: 3,style: (_inputTextStyles + "width:22px;height:15px;margin: 0 0 0 4px;")}),
-				Builder.node("input",{id: (this._appName + "rgb-b-field"),maxlength: 3,style: (_inputTextStyles + "width:22px;height:15px;margin: 0 0 0 4px;")}),
+				Builder.node("input",{id: (this._containerID + "rgb-r-field"),maxlength: 3,style: (_inputTextStyles + "width:22px;height:15px;margin: 0 0 0 16px;")}),
+				Builder.node("input",{id: (this._containerID + "rgb-g-field"),maxlength: 3,style: (_inputTextStyles + "width:22px;height:15px;margin: 0 0 0 4px;")}),
+				Builder.node("input",{id: (this._containerID + "rgb-b-field"),maxlength: 3,style: (_inputTextStyles + "width:22px;height:15px;margin: 0 0 0 4px;")}),
 
-				Builder.node("input",{id: (this._appName + "hsv-h-field"),maxlength: 3,style: (_inputTextStyles + "width:22px;height:15px;margin: 0 0 0 18px;")}),
-				Builder.node("input",{id: (this._appName + "hsv-s-field"),maxlength: 3,style: (_inputTextStyles + "width:22px;height:15px;margin: 0 0 0 4px;")}),
-				Builder.node("input",{id: (this._appName + "hsv-v-field"),maxlength: 3,style: (_inputTextStyles + "width:22px;height:15px;margin: 0 0 0 4px;")}),
+				Builder.node("input",{id: (this._containerID + "hsv-h-field"),maxlength: 3,style: (_inputTextStyles + "width:22px;height:15px;margin: 0 0 0 18px;")}),
+				Builder.node("input",{id: (this._containerID + "hsv-s-field"),maxlength: 3,style: (_inputTextStyles + "width:22px;height:15px;margin: 0 0 0 4px;")}),
+				Builder.node("input",{id: (this._containerID + "hsv-v-field"),maxlength: 3,style: (_inputTextStyles + "width:22px;height:15px;margin: 0 0 0 4px;")}),
 
 				Builder.node("div",{style: (_defaultStyles + "clear: both;")}),
 
 				// Sat Val Square
-				Builder.node("div",{id: (this._appName + "picker-square"),style: (_defaultStyles + "position:absolute;margin:71px 0 0 14px;width:15px;height:15px;z-index:" + _pickerZIndex + ";cursor:crosshair;background:transparent url(" + this._uiImageURL + ") no-repeat scroll -383px -257px;")}),
-				Builder.node("div",{id: (this._appName + "square-bg"),style: (_defaultStyles + "position:absolute;margin:78px 0 0 21px;width:256px;height:256px;cursor:crosshair;background:transparent url(" + this._uiImageURL + ") no-repeat scroll -383px 0;")}),
+				Builder.node("div",{id: (this._containerID + "picker-square"),style: (_defaultStyles + "position:absolute;margin:71px 0 0 14px;width:15px;height:15px;z-index:" + _pickerZIndex + ";cursor:crosshair;background:transparent url(" + this._uiImageURL + ") no-repeat scroll -383px -257px;")}),
+				Builder.node("div",{id: (this._containerID + "square-bg"),style: (_defaultStyles + "position:absolute;margin:78px 0 0 21px;width:256px;height:256px;cursor:crosshair;background:transparent url(" + this._uiImageURL + ") no-repeat scroll -383px 0;")}),
 
 				// Hue Slider
-				Builder.node("div",{id: (this._appName + "picker-hue"),style: (_defaultStyles + "position:absolute;margin:69px 0 0 280px;width:18px;height:18px;z-index:" + _pickerZIndex + ";cursor:crosshair;background:transparent url(" + this._uiImageURL + ") no-repeat scroll -399px -257px;")}),
-				Builder.node("div",{id: (this._appName + "hue-bg"),style: (_defaultStyles + "position:absolute;margin:78px 0 0 288px;width:20px;height:256px;cursor:crosshair;background:url(" + this._uiImageURL + ") no-repeat scroll -639px 0;")}),
+				Builder.node("div",{id: (this._containerID + "picker-hue"),style: (_defaultStyles + "position:absolute;margin:69px 0 0 280px;width:18px;height:18px;z-index:" + _pickerZIndex + ";cursor:crosshair;background:transparent url(" + this._uiImageURL + ") no-repeat scroll -399px -257px;")}),
+				Builder.node("div",{id: (this._containerID + "hue-bg"),style: (_defaultStyles + "position:absolute;margin:78px 0 0 288px;width:20px;height:256px;cursor:crosshair;background:url(" + this._uiImageURL + ") no-repeat scroll -639px 0;")}),
 
 				// Sat Slider
-				Builder.node("div",{id: (this._appName + "picker-sat"),style: (_defaultStyles + "position:absolute;margin:69px 0 0 310px;width:18px;height:18px;z-index:" + _pickerZIndex + ";cursor:crosshair;background:transparent url(" + this._uiImageURL + ") no-repeat scroll -399px -257px;")}),
-				Builder.node("div",{id: (this._appName + "sat-bg"),style: (_defaultStyles + "position:absolute;margin:78px 0 0 318px;width:20px;height:256px;cursor:crosshair;background:transparent url(" + this._uiImageURL + ") no-repeat scroll -660px 0;")}),
+				Builder.node("div",{id: (this._containerID + "picker-sat"),style: (_defaultStyles + "position:absolute;margin:69px 0 0 310px;width:18px;height:18px;z-index:" + _pickerZIndex + ";cursor:crosshair;background:transparent url(" + this._uiImageURL + ") no-repeat scroll -399px -257px;")}),
+				Builder.node("div",{id: (this._containerID + "sat-bg"),style: (_defaultStyles + "position:absolute;margin:78px 0 0 318px;width:20px;height:256px;cursor:crosshair;background:transparent url(" + this._uiImageURL + ") no-repeat scroll -660px 0;")}),
 
 				// Val Slider
-				Builder.node("div",{id: (this._appName + "picker-val"),style: (_defaultStyles + "position:absolute;margin:69px 0 0 340px;width:18px;height:18px;z-index:" + _pickerZIndex + ";cursor:crosshair;background:transparent url(" + this._uiImageURL + ") no-repeat scroll -399px -257px;")}),
-				Builder.node("div",{id: (this._appName + "val-bg"),style: (_defaultStyles + "position:absolute;margin:78px 0 0 348px;width:20px;height:256px;cursor:crosshair;background:transparent url(" + this._uiImageURL + ") no-repeat scroll -681px 0;")})
+				Builder.node("div",{id: (this._containerID + "picker-val"),style: (_defaultStyles + "position:absolute;margin:69px 0 0 340px;width:18px;height:18px;z-index:" + _pickerZIndex + ";cursor:crosshair;background:transparent url(" + this._uiImageURL + ") no-repeat scroll -399px -257px;")}),
+				Builder.node("div",{id: (this._containerID + "val-bg"),style: (_defaultStyles + "position:absolute;margin:78px 0 0 348px;width:20px;height:256px;cursor:crosshair;background:transparent url(" + this._uiImageURL + ") no-repeat scroll -681px 0;")})
 			]);
 
 			if ((this._embeddedContainerID !== "") && ($(this._embeddedContainerID) !== null)) {
@@ -267,7 +259,7 @@ CL.ColorPicker = Class.create({
 			}
 
 			// Picker
-			if (this._isDraggable === true) {
+			if (this._isDraggable) {
 				new Draggable(this._containerID,{zindex: _uiZIndex,starteffect: null,reverteffect: null,endeffect: null,onEnd: this.pickerOnEnd.bind(this),onDrag: function(_draggableElement,_event) {
 					// update callbacks "move"
 					var _x = parseInt($(this._containerID).style.left,10);
@@ -287,18 +279,18 @@ CL.ColorPicker = Class.create({
 				$(this._containerID).style.cursor = "move";
 
 				// Close btn
-				var _closeBtn = $$("#" + this._containerID + " div." + this._appName + "_close-btn")[0];
+				var _closeBtn = $$("#" + this._containerID + " div." + this._containerID + "_close-btn")[0];
 				_closeBtn.show();
 				Event.observe(_closeBtn,"click",function(_event) {
 					this.hide();
 				}.bind(this));
 			} else {
-				$$("#" + this._containerID + " div." + this._appName + "_close-btn-shim")[0].show();
+				$$("#" + this._containerID + " div." + this._containerID + "_close-btn-shim")[0].show();
 			}
 
 			// Square picker
-			this._squarePickerHandle = new Draggable(this._appName + "picker-square",{zindex: _pickerZIndex,starteffect: null,reverteffect: null,endeffect: null,onDrag: this.pickerOnDragChange.bind(this),snap: function(_x,_y,_draggable) { return [Math.min(Math.max(_x,0),256),Math.min(Math.max(_y,0),256)]; }});
-			Event.observe(this._appName + "square-bg","mousedown",function(_event) {
+			this._squarePickerHandle = new Draggable(this._containerID + "picker-square",{zindex: _pickerZIndex,starteffect: null,reverteffect: null,endeffect: null,onDrag: this.pickerOnDragChange.bind(this),snap: function(_x,_y,_draggable) { return [Math.min(Math.max(_x,0),256),Math.min(Math.max(_y,0),256)]; }});
+			Event.observe(this._containerID + "square-bg","mousedown",function(_event) {
 				this._lastMouseDownTime = (new Date()).getTime();
 
 				// First get the abs pos of the mousedown event:
@@ -306,11 +298,11 @@ CL.ColorPicker = Class.create({
 				var _y = Event.pointerY(_event);
 
 				// Get the abs position of the parent div:
-				var _offset = $(this._appName + "square-bg").cumulativeOffset();
+				var _offset = $(this._containerID + "square-bg").cumulativeOffset();
 
 				// Update picker position:
-				$(this._appName + "picker-square").style.left	= (_x - _offset.left).toString() + "px";
-				$(this._appName + "picker-square").style.top	= (_y - _offset.top).toString() + "px";
+				$(this._containerID + "picker-square").style.left	= (_x - _offset.left).toString() + "px";
+				$(this._containerID + "picker-square").style.top	= (_y - _offset.top).toString() + "px";
 
 				// Pass the event off to Draggable:
 				this._squarePickerHandle.initDrag(_event);
@@ -320,19 +312,18 @@ CL.ColorPicker = Class.create({
 			}.bind(this));
 
 			// Hue picker
-			this._huePickerHandle = new Draggable(this._appName + "picker-hue",{zindex: _pickerZIndex,starteffect: null,reverteffect: null,endeffect: null,onDrag: this.huePickerOnDragChange.bind(this),snap: function(_x,_y,_draggable) { return [0,Math.min(Math.max(_y,0),256)]; }});
-			Event.observe(this._appName + "hue-bg","mousedown",function(_event) {
+			this._huePickerHandle = new Draggable(this._containerID + "picker-hue",{zindex: _pickerZIndex,starteffect: null,reverteffect: null,endeffect: null,onDrag: this.huePickerOnDragChange.bind(this),snap: function(_x,_y,_draggable) { return [0,Math.min(Math.max(_y,0),256)]; }});
+			Event.observe(this._containerID + "hue-bg","mousedown",function(_event) {
 				this._lastMouseDownTime = (new Date()).getTime();
 
 				// First get the abs pos of the mousedown event:
-				//var _x = Event.pointerX(_event);
 				var _y = Event.pointerY(_event);
 
 				// Get the abs position of the parent div:
-				var _offset = $(this._appName + "hue-bg").cumulativeOffset();
+				var _offset = $(this._containerID + "hue-bg").cumulativeOffset();
 
 				// Update picker position:
-				$(this._appName + "picker-hue").style.top = (_y - _offset.top).toString() + "px";
+				$(this._containerID + "picker-hue").style.top = (_y - _offset.top).toString() + "px";
 
 				// Pass the event off to Draggable:
 				this._huePickerHandle.initDrag(_event);
@@ -342,19 +333,18 @@ CL.ColorPicker = Class.create({
 			}.bind(this));
 
 			// Sat picker
-			this._satPickerHandle = new Draggable(this._appName + "picker-sat",{zindex: _pickerZIndex,starteffect: null,reverteffect: null,endeffect: null,onDrag: this.satPickerOnDragChange.bind(this),snap: function(_x,_y,_draggable) { return [0,Math.min(Math.max(_y,0),256)]; }});
-			Event.observe(this._appName + "sat-bg","mousedown",function(_event) {
+			this._satPickerHandle = new Draggable(this._containerID + "picker-sat",{zindex: _pickerZIndex,starteffect: null,reverteffect: null,endeffect: null,onDrag: this.satPickerOnDragChange.bind(this),snap: function(_x,_y,_draggable) { return [0,Math.min(Math.max(_y,0),256)]; }});
+			Event.observe(this._containerID + "sat-bg","mousedown",function(_event) {
 				this._lastMouseDownTime = (new Date()).getTime();
 
 				// First get the abs pos of the mousedown event:
-				//var _x = Event.pointerX(_event);
 				var _y = Event.pointerY(_event);
 
 				// Get the abs position of the parent div:
-				var _offset = $(this._appName + "sat-bg").cumulativeOffset();
+				var _offset = $(this._containerID + "sat-bg").cumulativeOffset();
 
 				// Update picker position:
-				$(this._appName + "picker-sat").style.top = (_y - _offset.top).toString() + "px";
+				$(this._containerID + "picker-sat").style.top = (_y - _offset.top).toString() + "px";
 
 				// Pass the event off to Draggable:
 				this._satPickerHandle.initDrag(_event);
@@ -364,19 +354,18 @@ CL.ColorPicker = Class.create({
 			}.bind(this));
 
 			// Val picker
-			this._valPickerHandle = new Draggable(this._appName + "picker-val",{zindex: _pickerZIndex,starteffect: null,reverteffect: null,endeffect: null,onDrag: this.valPickerOnDragChange.bind(this),snap: function(_x,_y,_draggable) { return [0,Math.min(Math.max(_y,0),256)]; }});
-			Event.observe(this._appName + "val-bg","mousedown",function(_event) {
+			this._valPickerHandle = new Draggable(this._containerID + "picker-val",{zindex: _pickerZIndex,starteffect: null,reverteffect: null,endeffect: null,onDrag: this.valPickerOnDragChange.bind(this),snap: function(_x,_y,_draggable) { return [0,Math.min(Math.max(_y,0),256)]; }});
+			Event.observe(this._containerID + "val-bg","mousedown",function(_event) {
 				this._lastMouseDownTime = (new Date()).getTime();
 
 				// First get the abs pos of the mousedown event:
-				//var _x = Event.pointerX(_event);
 				var _y = Event.pointerY(_event);
 
 				// Get the abs position of the parent div:
-				var _offset = $(this._appName + "val-bg").cumulativeOffset();
+				var _offset = $(this._containerID + "val-bg").cumulativeOffset();
 
 				// Update picker position:
-				$(this._appName + "picker-val").style.top = (_y - _offset.top).toString() + "px";
+				$(this._containerID + "picker-val").style.top = (_y - _offset.top).toString() + "px";
 
 				// Pass the event off to Draggable:
 				this._valPickerHandle.initDrag(_event);
@@ -386,48 +375,39 @@ CL.ColorPicker = Class.create({
 			}.bind(this));
 
 			// Hex field
-			Event.observe(this._appName + "hex-field","keydown",this.fieldEvent.bind(this));
-			Event.observe(this._appName + "hex-field","keyup",this.fieldEvent.bind(this));
-			Event.observe(this._appName + "hex-field","blur",this.fieldEvent.bind(this));
+			Event.observe(this._containerID + "hex-field","keydown",this.fieldEvent.bind(this));
+			Event.observe(this._containerID + "hex-field","keyup",this.fieldEvent.bind(this));
+			Event.observe(this._containerID + "hex-field","blur",this.fieldEvent.bind(this));
 
 			// RGB R field
-			Event.observe(this._appName + "rgb-r-field","keydown",this.fieldEvent.bind(this));
-			Event.observe(this._appName + "rgb-r-field","keyup",this.fieldEvent.bind(this));
-			Event.observe(this._appName + "rgb-r-field","blur",this.fieldEvent.bind(this));
+			Event.observe(this._containerID + "rgb-r-field","keydown",this.fieldEvent.bind(this));
+			Event.observe(this._containerID + "rgb-r-field","keyup",this.fieldEvent.bind(this));
+			Event.observe(this._containerID + "rgb-r-field","blur",this.fieldEvent.bind(this));
 
 			// RGB G field
-			Event.observe(this._appName + "rgb-g-field","keydown",this.fieldEvent.bind(this));
-			Event.observe(this._appName + "rgb-g-field","keyup",this.fieldEvent.bind(this));
-			Event.observe(this._appName + "rgb-g-field","blur",this.fieldEvent.bind(this));
+			Event.observe(this._containerID + "rgb-g-field","keydown",this.fieldEvent.bind(this));
+			Event.observe(this._containerID + "rgb-g-field","keyup",this.fieldEvent.bind(this));
+			Event.observe(this._containerID + "rgb-g-field","blur",this.fieldEvent.bind(this));
 
 			// RGB B field
-			Event.observe(this._appName + "rgb-b-field","keydown",this.fieldEvent.bind(this));
-			Event.observe(this._appName + "rgb-b-field","keyup",this.fieldEvent.bind(this));
-			Event.observe(this._appName + "rgb-b-field","blur",this.fieldEvent.bind(this));
+			Event.observe(this._containerID + "rgb-b-field","keydown",this.fieldEvent.bind(this));
+			Event.observe(this._containerID + "rgb-b-field","keyup",this.fieldEvent.bind(this));
+			Event.observe(this._containerID + "rgb-b-field","blur",this.fieldEvent.bind(this));
 
 			// HSV H field
-			Event.observe(this._appName + "hsv-h-field","keydown",this.fieldEvent.bind(this));
-			Event.observe(this._appName + "hsv-h-field","keyup",this.fieldEvent.bind(this));
-			Event.observe(this._appName + "hsv-h-field","blur",this.fieldEvent.bind(this));
+			Event.observe(this._containerID + "hsv-h-field","keydown",this.fieldEvent.bind(this));
+			Event.observe(this._containerID + "hsv-h-field","keyup",this.fieldEvent.bind(this));
+			Event.observe(this._containerID + "hsv-h-field","blur",this.fieldEvent.bind(this));
 
 			// HSV S field
-			Event.observe(this._appName + "hsv-s-field","keydown",this.fieldEvent.bind(this));
-			Event.observe(this._appName + "hsv-s-field","keyup",this.fieldEvent.bind(this));
-			Event.observe(this._appName + "hsv-s-field","blur",this.fieldEvent.bind(this));
+			Event.observe(this._containerID + "hsv-s-field","keydown",this.fieldEvent.bind(this));
+			Event.observe(this._containerID + "hsv-s-field","keyup",this.fieldEvent.bind(this));
+			Event.observe(this._containerID + "hsv-s-field","blur",this.fieldEvent.bind(this));
 
 			// HSV V field
-			Event.observe(this._appName + "hsv-v-field","keydown",this.fieldEvent.bind(this));
-			Event.observe(this._appName + "hsv-v-field","keyup",this.fieldEvent.bind(this));
-			Event.observe(this._appName + "hsv-v-field","blur",this.fieldEvent.bind(this));
-
-			Array.prototype.in_array = function(_needle) {
-				for (var _i=0,_length=this.length;_i<=_length;_i++) {
-					if (this[_i] === _needle) {
-						return true;
-					}
-				}
-				return false;
-			};
+			Event.observe(this._containerID + "hsv-v-field","keydown",this.fieldEvent.bind(this));
+			Event.observe(this._containerID + "hsv-v-field","keyup",this.fieldEvent.bind(this));
+			Event.observe(this._containerID + "hsv-v-field","blur",this.fieldEvent.bind(this));
 
 			$(this._containerID).style.position	= this._position;
 			this._status						= "hidden";
@@ -465,7 +445,7 @@ CL.ColorPicker = Class.create({
 		var _key		= "";
 
 		if (_type === "keydown") {
-			if ([38,40].in_array(_keyCode) === true) {
+			if ([38,40].indexOf(_keyCode) !== -1) {
 				if (_field === "hex") {
 					_value	= this.hex2dec(_value);
 					_key	= ("_" + _field);
@@ -474,7 +454,7 @@ CL.ColorPicker = Class.create({
 					_key	= ("_" + _part);
 				}
 
-				var _amount = (_event.shiftKey === true) ? 5 : 1;
+				var _amount = _event.shiftKey ? 5 : 1;
 
 				if (_keyCode === 38) {
 					// Up arrow
@@ -501,38 +481,38 @@ CL.ColorPicker = Class.create({
 				this._lastKeyDownEventCheckTime = this._lastKeyDownTime = (new Date()).getTime();
 			}
 		}
-		if (["keyup","blur"].in_array(_type) === true) {
+		if (["keyup","blur"].indexOf(_type) !== -1) {
 			if (_field === "hex") {
-				if (this.isValidHex(_value) === true) {
+				if (this.isValidHex(_value)) {
 					_hsv = this.hex2hsv(_value);
 				}
 			} else if (_field === "rgb") {
 				_value = parseInt(_value,10);
 				if (_part === "r") {
-					if (this.isInRange(_value,this._limits._r[0],this._limits._r[1] + 1) === true) {
+					if (this.isInRange(_value,this._limits._r[0],this._limits._r[1] + 1)) {
 						_hsv = this.rgb2hsv([(_value / 255),this._colorValue._rgb[1],this._colorValue._rgb[2]]);
 					}
 				} else if (_part === "g") {
-					if (this.isInRange(_value,this._limits._g[0],this._limits._g[1] + 1) === true) {
+					if (this.isInRange(_value,this._limits._g[0],this._limits._g[1] + 1)) {
 						_hsv = this.rgb2hsv([this._colorValue._rgb[0],(_value / 255),this._colorValue._rgb[2]]);
 					}
 				} else if (_part === "b") {
-					if (this.isInRange(_value,this._limits._b[0],this._limits._b[1] + 1) === true) {
+					if (this.isInRange(_value,this._limits._b[0],this._limits._b[1] + 1)) {
 						_hsv = this.rgb2hsv([this._colorValue._rgb[0],this._colorValue._rgb[1],(_value / 255)]);
 					}
 				}
 			} else if (_field === "hsv") {
 				_value = parseInt(_value,10);
 				if (_part === "h") {
-					if (this.isInRange(_value,this._limits._h[0],this._limits._h[1] + 1) === true) {
+					if (this.isInRange(_value,this._limits._h[0],this._limits._h[1] + 1)) {
 						_hsv = [(_value / 360),this._colorValue._hsv[1],this._colorValue._hsv[2]];
 					}
 				} else if (_part === "s") {
-					if (this.isInRange(_value,this._limits._s[0],this._limits._s[1] + 1) === true) {
+					if (this.isInRange(_value,this._limits._s[0],this._limits._s[1] + 1)) {
 						_hsv = [this._colorValue._hsv[0],(_value / 100),this._colorValue._hsv[2]];
 					}
 				} else if (_part === "v") {
-					if (this.isInRange(_value,this._limits._v[0],this._limits._v[1] + 1) === true) {
+					if (this.isInRange(_value,this._limits._v[0],this._limits._v[1] + 1)) {
 						_hsv = [this._colorValue._hsv[0],this._colorValue._hsv[1],(_value / 100)];
 					}
 				}
@@ -568,42 +548,44 @@ CL.ColorPicker = Class.create({
 	},
 
 	pickerOnDragChange: function(_draggableElement,_event) {
-		var _pickerCumulativeOffset	= $(this._appName + "picker-square").cumulativeOffset();
-		var _sat					= (_pickerCumulativeOffset.left - this._ui._pickerCumulativeOffset.left - parseInt($(this._appName + "picker-square").style.marginLeft,10));
-		var _val					= (_pickerCumulativeOffset.top - this._ui._pickerCumulativeOffset.top - parseInt($(this._appName + "picker-square").style.marginTop,10));
-		_sat						= (_sat / 256);
-		_val						= Math.abs((_val / 256) - 1);
+		this._ui._pickerCumulativeOffset	= $(this._containerID).cumulativeOffset();
+		var _pickerCumulativeOffset			= $(this._containerID + "picker-square").cumulativeOffset();
+		var _sat							= (_pickerCumulativeOffset.left - this._ui._pickerCumulativeOffset.left - parseInt($(this._containerID + "picker-square").style.marginLeft,10));
+		var _val							= (_pickerCumulativeOffset.top - this._ui._pickerCumulativeOffset.top - parseInt($(this._containerID + "picker-square").style.marginTop,10));
+		_sat								= (_sat / 256);
+		_val								= Math.abs((_val / 256) - 1);
 
 		this.setColor("hsv",[this._colorValue._hsv[0],_sat,_val],"square");
 	},
 
 	huePickerOnDragChange: function(_draggableElement,_event) {
-		var _pickerCumulativeOffset	= $(this._appName + "picker-hue").cumulativeOffset();
-		var _hue					= (_pickerCumulativeOffset.top - this._ui._pickerCumulativeOffset.top - parseInt($(this._appName + "picker-hue").style.marginTop,10));
-		_hue						= (_hue / 256);
+		this._ui._pickerCumulativeOffset	= $(this._containerID).cumulativeOffset();
+		var _pickerCumulativeOffset			= $(this._containerID + "picker-hue").cumulativeOffset();
+		var _hue							= (_pickerCumulativeOffset.top - this._ui._pickerCumulativeOffset.top - parseInt($(this._containerID + "picker-hue").style.marginTop,10));
+		_hue								= (_hue / 256);
 
 		this.setColor("hsv",[_hue,this._colorValue._hsv[1],this._colorValue._hsv[2]],"hue");
 	},
 
 	satPickerOnDragChange: function(_draggableElement,_event) {
-		var _pickerCumulativeOffset	= $(this._appName + "picker-sat").cumulativeOffset();
-		var _sat					= (_pickerCumulativeOffset.top - this._ui._pickerCumulativeOffset.top - parseInt($(this._appName + "picker-sat").style.marginTop,10));
-		_sat						= Math.abs((_sat / 256) - 1);
+		this._ui._pickerCumulativeOffset	= $(this._containerID).cumulativeOffset();
+		var _pickerCumulativeOffset			= $(this._containerID + "picker-sat").cumulativeOffset();
+		var _sat							= (_pickerCumulativeOffset.top - this._ui._pickerCumulativeOffset.top - parseInt($(this._containerID + "picker-sat").style.marginTop,10));
+		_sat								= Math.abs((_sat / 256) - 1);
 
 		this.setColor("hsv",[this._colorValue._hsv[0],_sat,this._colorValue._hsv[2]],"sat");
 	},
 
 	valPickerOnDragChange: function(_draggableElement,_event) {
-		var _pickerCumulativeOffset	= $(this._appName + "picker-val").cumulativeOffset();
-		var _val					= (_pickerCumulativeOffset.top - this._ui._pickerCumulativeOffset.top - parseInt($(this._appName + "picker-val").style.marginTop,10));
-		_val						= Math.abs((_val / 256) - 1);
+		this._ui._pickerCumulativeOffset	= $(this._containerID).cumulativeOffset();
+		var _pickerCumulativeOffset			= $(this._containerID + "picker-val").cumulativeOffset();
+		var _val							= (_pickerCumulativeOffset.top - this._ui._pickerCumulativeOffset.top - parseInt($(this._containerID + "picker-val").style.marginTop,10));
+		_val								= Math.abs((_val / 256) - 1);
 
 		this.setColor("hsv",[this._colorValue._hsv[0],this._colorValue._hsv[1],_val],"val");
 	},
 
 	pickerOnEnd: function(_draggableElement,_mouseCoordinates) {
-		this._ui._pickerCumulativeOffset = $(this._containerID).cumulativeOffset();
-
 		// update callbacks "move-end"
 		var _x = parseInt($(this._containerID).style.left,10);
 		var _y = parseInt($(this._containerID).style.top,10);
@@ -623,7 +605,7 @@ CL.ColorPicker = Class.create({
 		} else if (_format === "hsv") {
 			_hsv = _value;
 		} else if (_format === "hex") {
-			if (this.isValidHex(_value) === true) {
+			if (this.isValidHex(_value)) {
 				_hsv = this.hex2hsv(_value);
 			}
 		}
@@ -638,35 +620,34 @@ CL.ColorPicker = Class.create({
 				_hex					= this.hsv2hex([this._colorValue._hsv[0],1,1]);
 
 				// Update backgrounds
-				$(this._appName + "square-bg").style.backgroundColor	= ("#" + _hex);
-				$(this._appName + "sat-bg").style.backgroundColor		= ("#" + _hex);
-				$(this._appName + "val-bg").style.backgroundColor		= ("#" + _hex);
+				$(this._containerID + "square-bg").style.backgroundColor	= ("#" + _hex);
+				$(this._containerID + "sat-bg").style.backgroundColor		= ("#" + _hex);
+				$(this._containerID + "val-bg").style.backgroundColor		= ("#" + _hex);
 
 				// Update text fields
-				$(this._appName + "hex-field").value	= this._colorValue._hex;
+				$(this._containerID + "hex-field").value	= this._colorValue._hex;
 
-				$(this._appName + "rgb-r-field").value	= Math.round(this._colorValue._rgb[0] * 255);
-				$(this._appName + "rgb-g-field").value	= Math.round(this._colorValue._rgb[1] * 255);
-				$(this._appName + "rgb-b-field").value	= Math.round(this._colorValue._rgb[2] * 255);
+				$(this._containerID + "rgb-r-field").value	= Math.round(this._colorValue._rgb[0] * 255);
+				$(this._containerID + "rgb-g-field").value	= Math.round(this._colorValue._rgb[1] * 255);
+				$(this._containerID + "rgb-b-field").value	= Math.round(this._colorValue._rgb[2] * 255);
 
-				$(this._appName + "hsv-h-field").value	= Math.round(this._colorValue._hsv[0] * 360);
-				$(this._appName + "hsv-s-field").value	= Math.round(this._colorValue._hsv[1] * 100);
-				$(this._appName + "hsv-v-field").value	= Math.round(this._colorValue._hsv[2] * 100);
+				$(this._containerID + "hsv-h-field").value	= Math.round(this._colorValue._hsv[0] * 360);
+				$(this._containerID + "hsv-s-field").value	= Math.round(this._colorValue._hsv[1] * 100);
+				$(this._containerID + "hsv-v-field").value	= Math.round(this._colorValue._hsv[2] * 100);
 
 				// Update sliders
 				if (_slider !== "square") {
-					$(this._appName + "picker-square").style.left	= ((this._colorValue._hsv[1] * 256) + "px");
-					$(this._appName + "picker-square").style.top	= (Math.abs((this._colorValue._hsv[2] * 256) - 256) + "px");
+					$(this._containerID + "picker-square").style.left	= ((this._colorValue._hsv[1] * 256) + "px");
+					$(this._containerID + "picker-square").style.top	= (Math.abs((this._colorValue._hsv[2] * 256) - 256) + "px");
 				}
 				if (_slider !== "hue") {
-					$(this._appName + "picker-hue").style.top	= ((this._colorValue._hsv[0] * 256) + "px");
+					$(this._containerID + "picker-hue").style.top = ((this._colorValue._hsv[0] * 256) + "px");
 				}
-
 				if (_slider !== "sat") {
-					$(this._appName + "picker-sat").style.top	= (Math.abs((this._colorValue._hsv[1] * 256) - 256) + "px");
+					$(this._containerID + "picker-sat").style.top = (Math.abs((this._colorValue._hsv[1] * 256) - 256) + "px");
 				}
 				if (_slider !== "val") {
-					$(this._appName + "picker-val").style.top	= (Math.abs((this._colorValue._hsv[2] * 256) - 256) + "px");
+					$(this._containerID + "picker-val").style.top = (Math.abs((this._colorValue._hsv[2] * 256) - 256) + "px");
 				}
 
 				var _fireKeyboardChangeEndHandler	= false;
@@ -691,7 +672,7 @@ CL.ColorPicker = Class.create({
 							// start event!
 
 							_fireChangeStartEvents = true;
-							if ((_event !== false) && ([38,40].in_array(_event.keyCode) === false)) {
+							if ((_event !== false) && ([38,40].indexOf(_event.keyCode) === -1)) {
 								// Only arrow up and arrow down events can fire this...
 
 								_fireKeyboardChangeEndHandler = true; // Since this need to fire AFTER "change"
@@ -703,7 +684,7 @@ CL.ColorPicker = Class.create({
 					_fireChangeEndEvents	= true;
 				}
 
-				if (_fireChangeStartEvents === true) {
+				if (_fireChangeStartEvents) {
 					// Update change-start callbacks
 					for (var _i=0,_length=this._callbacks["change-start"].length;_i<_length;_i++) {
 						this._callbacks["change-start"][_i]({_hex: this._colorValue._hex,_rgb: this._colorValue._rgb,_hsv: this._colorValue._hsv});
@@ -715,19 +696,15 @@ CL.ColorPicker = Class.create({
 					this._callbacks["change"][_i]({_hex: this._colorValue._hex,_rgb: this._colorValue._rgb,_hsv: this._colorValue._hsv});
 				}
 
-				if (_fireKeyboardChangeEndHandler === true) {
+				if (_fireKeyboardChangeEndHandler) {
 					this.keyboardChangeEndHandler();
 				}
 
-				if (_fireChangeEndEvents === true) {
+				if (_fireChangeEndEvents) {
 					this.changeEndEventHandler();
 				}
 			}
 		}
-	},
-
-	zIndex: function() {
-		return ++this._zIndex;
 	},
 
 	showAtClickEvent: function(_event,_x,_y) {
@@ -788,13 +765,13 @@ CL.ColorPicker = Class.create({
 	},
 
 	mouseDown: function(_event) {
-		if (this._hideOnOutsideMouseDown === true) {
+		if (this._hideOnOutsideMouseDown) {
 			var _element				= Event.element(_event);
 			var _numRelatedElements		= this._relatedElements.length;
 			var _isRelatedElementEvent	= false;
 
 			for (var _i=0;_i<_numRelatedElements;_i++) {
-				if ((_element.descendantOf(this._relatedElements[_i]) === true) || (_element.id === this._relatedElements[_i])) {
+				if (_element.descendantOf(this._relatedElements[_i]) || (_element.id === this._relatedElements[_i])) {
 					_isRelatedElementEvent = true;
 					break;
 				}
@@ -910,16 +887,16 @@ CL.ColorPicker = Class.create({
 		} else {
 			// Chromatic data...
 			_s = (_deltaMax / _max);
-			_s = (isNaN(_s) === true) ? 0 : _s;
+			_s = isNaN(_s) ? 0 : _s;
 		}
 
 		_deltaR = ((((_max - _r) / 6) + (_deltaMax / 2)) / _deltaMax);
 		_deltaG = ((((_max - _g) / 6) + (_deltaMax / 2)) / _deltaMax);
 		_deltaB = ((((_max - _b) / 6) + (_deltaMax / 2)) / _deltaMax);
 
-		_deltaR = (isNaN(_deltaR) === true) ? 0 : _deltaR;
-		_deltaG = (isNaN(_deltaG) === true) ? 0 : _deltaG;
-		_deltaB = (isNaN(_deltaB) === true) ? 0 : _deltaB;
+		_deltaR = isNaN(_deltaR) ? 0 : _deltaR;
+		_deltaG = isNaN(_deltaG) ? 0 : _deltaG;
+		_deltaB = isNaN(_deltaB) ? 0 : _deltaB;
 
 		if (_r == _max) {
 			_h = (_deltaB - _deltaG);

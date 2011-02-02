@@ -1,0 +1,651 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en-us" lang="en-us">
+	<head>
+		<title>COLOURlovers ColorPicker Examples</title>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/prototype/1.6.1.0/prototype.js" charset="utf-8"></script>
+		<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/scriptaculous/1.8.2/scriptaculous.js?load=effects,builder,dragdrop" charset="utf-8"></script>
+		<script type="text/javascript" src="ColorPicker.class.js" charset="utf-8"></script>
+
+		<!-- JS Highlighting -->
+		<link href="http://alexgorbatchev.com/pub/sh/current/styles/shCore.css" rel="stylesheet" type="text/css" />
+		<link href="http://alexgorbatchev.com/pub/sh/current/styles/shThemeDefault.css" rel="stylesheet" type="text/css" />
+		<script src="http://alexgorbatchev.com/pub/sh/current/scripts/shCore.js" type="text/javascript"></script>
+		<script src="http://alexgorbatchev.com/pub/sh/current/scripts/shAutoloader.js" type="text/javascript"></script>
+		<script src="http://alexgorbatchev.com/pub/sh/current/scripts/shBrushJScript.js" type="text/javascript"></script>
+
+		<style type="text/css">
+			/* <![CDATA[ */
+			body {
+				max-width: 1250px;
+			}
+			body, div, ul, textarea, input {
+				font:	normal 12px/20px helvetica,arial,sans-serif;
+				color:	#333333;
+			}
+			p.intro {
+				font-size: 14px;
+			}
+			div.example {
+				padding:		10px 13px;
+				border-left:	6px solid #dddddd;
+				margin-left:	10px;
+			}
+			div.color {
+				float:			left;
+				width:			400px;
+				height:			100px;
+				border:			1px solid #333333;
+				margin-right:	10px;
+				cursor:			pointer;
+			}
+			hr {
+				background-color:	#999999;
+				height:				1px;
+				margin:				20px 0;
+				border:				0 none;
+			}
+			h2, p {
+				margin-top: 0;
+			}
+			input.hex, input.rgb, input.hsv {
+				width:			400px;
+				text-transform:	uppercase;
+				font-family:	"Courier New",Courier,Freemono,"Nimbus Mono L",monospace;
+			}
+			input.hex {
+				width: 50px;
+				float: left;
+			}
+			div.clear {
+				clear: both;
+			}
+			ul.pre li {
+				white-space: pre;
+				font-family: "Courier New",Courier,Freemono,"Nimbus Mono L",monospace;
+			}
+			textarea {
+				width:			600px;
+				height:			200px;
+				font:			12px/12px "Courier New",Courier,Freemono,"Nimbus Mono L",monospace;
+				font-size:		10px;
+				overflow:		auto;
+				white-space:	pre;
+			}
+			.mb-10 {
+				margin-bottom: 10px;
+			}
+			/* ]]> */
+		</style>
+	</head>
+
+	<body>
+		<script type="text/javascript">
+			//<![CDATA[
+			var _ColorPicker = new CL.ColorPicker({
+				_mode:			"floating",
+				_uiImageURL:	"ui.png"
+			});
+			var _ColorPicker_callbacks = new CL.ColorPicker({
+				_mode:			"floating",
+				_uiImageURL:	"ui.png"
+			});
+			var _ColorPicker_noAutoHide = new CL.ColorPicker({
+				_mode:						"floating",
+				_uiImageURL:				"ui.png",
+				_hideOnOutsideMouseDown:	false
+			});
+			var _boxID = 0;
+
+			_ColorPicker.registerCallback("change",onChange);
+			_ColorPicker_callbacks.registerCallback("change",onChange);
+			_ColorPicker_noAutoHide.registerCallback("change",onChange);
+
+			function onChange(_colorPickerData) {
+				$("example_" + _boxID.toString()).style.background = ("#" + _colorPickerData._hex);
+
+				if ($("hex_" + _boxID.toString()) !== null) {
+					$("hex_" + _boxID.toString()).value = _colorPickerData._hex;
+				}
+				if ($("rgb_" + _boxID.toString()) !== null) {
+					$("rgb_" + _boxID.toString()).value = _colorPickerData._rgb.join(", ");
+				}
+				if ($("hsv_" + _boxID.toString()) !== null) {
+					$("hsv_" + _boxID.toString()).value = _colorPickerData._hsv.join(", ");
+				}
+			}
+			//]]>
+		</script>
+
+		<h1>COLOURlovers Color Picker examples</h1>
+
+		<p class="intro">Project home page: <a href="https://github.com/PureForm/ColorPicker" target="_blank">github.com/PureForm/ColorPicker</a></p>
+		<p class="intro">Licensing info: <a href="http://www.opensource.org/licenses/mit-license.php" target="_blank">www.opensource.org/licenses/mit-license.php</a></p>
+		<p class="intro">Welcome to the example page for COLOURlovers' JavaScript Color Picker. Here you'll find a few examples on how to use the color picker, but keep in mind that these examples only scratch the surface of the settings available for the color picker.</p>
+
+		<hr />
+
+		<!-- ----------------------------------------------------------------- Basic Example ----------------------------------------------------------------- -->
+		<h2>Basic Example</h2>
+		<div class="example">
+			<p>Clicking on the div below will show the color picker and will change the div's background color when the picker is used.</p>
+
+			<div id="example_1" class="color"></div>
+			<div class="clear"></div>
+
+			<script type="text/javascript">
+				//<![CDATA[
+
+				// _ColorPicker.registerRelatedElement("example_1"); sets $("example_1") as an element that, when clicked on, will not close the picker.
+				// Otherwise the picker will close when something other than the picker is clicked [when _hideOnOutsideMouseDown is set to true].
+				_ColorPicker.registerRelatedElement("example_1");
+
+				Event.observe("example_1","click",function(_event) {
+					_boxID = 1;
+
+					// Use _ColorPicker.showAtClickEvent() to show the picker at the click event, adjusted 50px left and 10px down.
+					_ColorPicker.showAtClickEvent(_event,-50,10);
+				});
+				//]]>
+			</script>
+			<script type="syntaxhighlighter" class="brush: js; collapse: true">
+				//<![CDATA[
+					// <div id="example"></div>
+				//]]>
+
+				var _ColorPicker = new CL.ColorPicker({
+					_mode:			"floating",
+					_uiImageURL:	"ui.png"
+				});
+
+				_ColorPicker.registerCallback("change",function (_colorPickerData) {
+					$("example").style.background = ("#" + _colorPickerData._hex);
+				});
+
+				_ColorPicker.registerRelatedElement("example");
+
+				Event.observe("example","click",function(_event) {
+					_ColorPicker.showAtClickEvent(_event,-50,10);
+				});</script>
+		</div>
+		<hr />
+
+		<!-- ----------------------------------------------------------------- Initial Color Example ----------------------------------------------------------------- -->
+		<h2>Initial Color Example</h2>
+		<div class="example">
+			<p>Here we pass an initial color to the picker [#2569DD] and don't change the position of the picker when a related element is clicked.</p>
+
+			<div id="example_2" class="color" style="background-color: #2569DD;"></div>
+			<input id="hex_2" class="hex" value="2569DD" />
+			<div class="clear"></div>
+
+			<script type="text/javascript">
+				//<![CDATA[
+				_ColorPicker.registerRelatedElement("example_2");
+				Event.observe("example_2","click",function(_event) {
+					_boxID = 2;
+
+					// Use _ColorPicker.setColor() to set the picker to the hex value in $("hex_2").value
+					_ColorPicker.setColor("hex",$("hex_2").value);
+
+					// Here I check to see if the picker is already shown.
+					if (_ColorPicker._status === "hidden") {
+						_ColorPicker.showAtClickEvent(_event,-50,10);
+					}
+				});
+
+				_ColorPicker.registerRelatedElement("hex_2");
+				Event.observe("hex_2","click",function(_event) {
+					_boxID = 2;
+					_ColorPicker.setColor("hex",$("hex_2").value);
+					if (_ColorPicker._status === "hidden") {
+						_ColorPicker.showAtClickEvent(_event,-50,10);
+					}
+				});
+				//]]>
+			</script>
+			<script type="syntaxhighlighter" class="brush: js; collapse: true">
+				//<![CDATA[
+					// <div id="example" style="background-color: #2569DD;"></div>
+					// <input id="hex" value="2569DD" />
+				//]]>
+
+				var _ColorPicker = new CL.ColorPicker({
+					_mode:			"floating",
+					_uiImageURL:	"ui.png"
+				});
+
+				_ColorPicker.registerCallback("change",function (_colorPickerData) {
+					$("example").style.background	= ("#" + _colorPickerData._hex);
+					$("hex").value					= _colorPickerData._hex;
+				});
+
+				// Set up the div element
+				_ColorPicker.registerRelatedElement("example");
+				Event.observe("example","click",function(_event) {
+					_ColorPicker.setColor("hex",$("hex").value);
+
+					if (_ColorPicker._status === "hidden") {
+						_ColorPicker.showAtClickEvent(_event,-50,10);
+					}
+				});
+
+				// Set up the input element
+				_ColorPicker.registerRelatedElement("hex");
+				Event.observe("hex","click",function(_event) {
+					_ColorPicker.setColor("hex",$("hex").value);
+					if (_ColorPicker._status === "hidden") {
+						_ColorPicker.showAtClickEvent(_event,-50,10);
+					}
+				});</script>
+		</div>
+		<hr />
+
+		<!-- ----------------------------------------------------------------- Example with RGB and HSV ----------------------------------------------------------------- -->
+		<h2>Example with RGB and HSV</h2>
+		<div class="example">
+			<p>The color picker is fully compatible with RGB and HSV values. In this example, the color picker dumps these values into a couple text inputs.</p>
+			<p>RGB and HSV values can be passed to the picker in <code>_ColorPicker.setColor()</code> like so:</p>
+			<script type="syntaxhighlighter" class="brush: js">
+				_ColorPicker.setColor("rgb",[1,0.9333,0]); // RGB, each value from 0 to 1
+				_ColorPicker.setColor("hsv",[0.1555,1,1]); // HSV, each value from 0 to 1
+				_ColorPicker.setColor("hex","ffee00");     // HEX</script>
+
+			<div id="example_3" class="color" style="background-color: #2569DD;"></div>
+			<input id="hex_3" class="hex" value="2569DD" />
+			<div class="clear mb-10"></div>
+
+			<strong>RGB:</strong> <input id="rgb_3" class="rgb" />
+			<div class="clear mb-10"></div>
+
+			<strong>HSV:</strong> <input id="hsv_3" class="hsv" />
+			<div class="clear"></div>
+
+			<script type="text/javascript">
+				//<![CDATA[
+				_ColorPicker.registerRelatedElement("example_3");
+				Event.observe("example_3","click",function(_event) {
+					_boxID = 3;
+
+					_ColorPicker.setColor("hex",$("hex_3").value);
+					if (_ColorPicker._status === "hidden") {
+						_ColorPicker.showAtClickEvent(_event,-50,10);
+					}
+				});
+
+				_ColorPicker.registerRelatedElement("hex_3");
+				Event.observe("hex_3","click",function(_event) {
+					_boxID = 3;
+					_ColorPicker.setColor("hex",$("hex_3").value);
+					if (_ColorPicker._status === "hidden") {
+						_ColorPicker.showAtClickEvent(_event,-50,10);
+					}
+				});
+				//]]>
+			</script>
+			<script type="syntaxhighlighter" class="brush: js; collapse: true">
+				//<![CDATA[
+					// <div id="example" style="background-color: #2569DD;"></div>
+					// <input id="hex" value="2569DD" />
+					// RGB: <input id="rgb" />
+					// HSV: <input id="hsv" />
+				//]]>
+
+				var _ColorPicker = new CL.ColorPicker({
+					_mode:			"floating",
+					_uiImageURL:	"ui.png"
+				});
+
+				_ColorPicker.registerCallback("change",function (_colorPickerData) {
+					$("example").style.background	= ("#" + _colorPickerData._hex);
+					$("hex").value					= _colorPickerData._hex;
+					$("rgb").value					= _colorPickerData._rgb.join(", ");
+					$("hsv").value					= _colorPickerData._hsv.join(", ");
+				});
+
+				// Set up the div element
+				_ColorPicker.registerRelatedElement("example");
+				Event.observe("example","click",function(_event) {
+					_ColorPicker.setColor("hex",$("hex").value);
+					if (_ColorPicker._status === "hidden") {
+						_ColorPicker.showAtClickEvent(_event,-50,10);
+					}
+				});
+
+				// Set up the input element
+				_ColorPicker.registerRelatedElement("hex");
+				Event.observe("hex","click",function(_event) {
+					_ColorPicker.setColor("hex",$("hex").value);
+					if (_ColorPicker._status === "hidden") {
+						_ColorPicker.showAtClickEvent(_event,-50,10);
+					}
+				});</script>
+		</div>
+		<hr />
+
+		<!-- ----------------------------------------------------------------- Example with RGB and HSV ----------------------------------------------------------------- -->
+		<h2>Example with event callbacks</h2>
+		<div class="example">
+			<p>You can leverage the pickers several event callbacks to tie into the picker's internally called events. This is useful for updating data and elements exactly when they need to be.</p>
+			<p>The most common callback would be the <strong><code>change</code></strong> callback. This is called whenever a value is changed on the picker.</p>
+			<script type="syntaxhighlighter" class="brush: js">
+				_ColorPicker.registerCallback("change",function(_colorPickerData) {
+					/*
+					Do something with _colorPickerData
+					_colorPickerData looks something like this for change events:
+					{
+						"_hex": "#FFEE00",
+						"_rgb": [1,0.9333,0],
+						"_hsv": [0.1555,1,1]
+					}
+					*/
+				});</script>
+			<p>Complete list of callbacks:</p>
+			<ul class="pre">
+				<li><strong>change</strong>       called each time the value of the picker is changed</li>
+				<li><strong>change-start</strong> called when the user starts to change the value of the picker [the very first "change" to the picker]</li>
+				<li><strong>change-end</strong>   called when the user is done changing the value of the picker [the very last "change" to the picker]</li>
+				<li><strong>move</strong>         called when the picker has been moved on the screen</li>
+				<li><strong>move-start</strong>   called when the user starts to change the position of the picker [they've begun dragging the picker] -- For drag events only!</li>
+				<li><strong>move-end</strong>     called when the user is done changing the position of the picker [they're done dragging the picker] -- For drag events only!</li>
+				<li><strong>show</strong>         called when the picker has been shown</li>
+				<li><strong>hide</strong>         called when the picker has been hidden</li>
+			</ul>
+
+			<div id="example_4" class="color" style="background-color: #2569DD;"></div>
+			<input id="hex_4" class="hex" value="2569DD" />
+			<div class="clear"></div>
+			<p><strong>Log of callback events:</strong> Use the picker in this example to show when events are fired. [RGB and HSV values are rounded to three decimal places].</p>
+			<textarea id="callback-log" rows="0" cols="0"></textarea>
+
+			<script type="text/javascript">
+				//<![CDATA[
+				_ColorPicker_callbacks.registerRelatedElement("example_4");
+				Event.observe("example_4","click",function(_event) {
+					_boxID = 4;
+
+					_ColorPicker_callbacks.setColor("hex",$("hex_4").value);
+					if (_ColorPicker_callbacks._status === "hidden") {
+						_ColorPicker_callbacks.showAtClickEvent(_event,400,10);
+					}
+				});
+
+				_ColorPicker_callbacks.registerRelatedElement("hex_4");
+				Event.observe("hex_4","click",function(_event) {
+					_boxID = 4;
+					_ColorPicker_callbacks.setColor("hex",$("hex_4").value);
+					if (_ColorPicker_callbacks._status === "hidden") {
+						_ColorPicker_callbacks.showAtClickEvent(_event,400,10);
+					}
+				});
+				_ColorPicker_callbacks.registerCallback("change",function(_colorPickerData) {
+					log("change",_colorPickerData);
+				});
+
+				_ColorPicker_callbacks.registerCallback("change-start",function(_colorPickerData) {
+					log("change-start",_colorPickerData);
+				});
+
+				_ColorPicker_callbacks.registerCallback("change-end",function(_colorPickerData) {
+					log("change-end",_colorPickerData);
+				});
+
+				_ColorPicker_callbacks.registerCallback("move",function(_colorPickerData) {
+					log("move",_colorPickerData);
+				});
+
+				_ColorPicker_callbacks.registerCallback("move-start",function(_colorPickerData) {
+					log("move-start",_colorPickerData);
+				});
+
+				_ColorPicker_callbacks.registerCallback("move-end",function(_colorPickerData) {
+					log("move-end",_colorPickerData);
+				});
+
+				_ColorPicker_callbacks.registerCallback("show",function(_colorPickerData) {
+					log("show",_colorPickerData);
+				});
+
+				_ColorPicker_callbacks.registerCallback("hide",function(_colorPickerData) {
+					log("hide",_colorPickerData);
+				});
+
+				function log(_eventType,_data) {
+					var _buffer = pad(_eventType,"change-start".length + 2," ");
+
+					if (["change","change-start","change-end"].indexOf(_eventType) === -1) {
+						_buffer += "{_x: " + _data._x.toString() + ",_y: " + _data._y.toString() + "}";
+					} else {
+						var _rgb	= [(Math.round(_data._rgb[0] * 1000) / 1000),(Math.round(_data._rgb[1] * 1000) / 1000),(Math.round(_data._rgb[2] * 1000) / 1000),].join(",");
+						var _hsv	= [(Math.round(_data._hsv[0] * 1000) / 1000),(Math.round(_data._hsv[1] * 1000) / 1000),(Math.round(_data._hsv[2] * 1000) / 1000),].join(",");
+						_buffer		+= "{_hex: \"" + _data._hex + "\",_rgb: " + _rgb + ",_hsv: " + _hsv + "}";
+					}
+
+					$("callback-log").value = (_buffer + "\n" + $("callback-log").value);
+				}
+
+				function pad(_str,_length,_char) {
+					while (_str.length < _length) {
+						_str += _char;
+					}
+
+					return _str;
+				}
+				//]]>
+			</script>
+			<script type="syntaxhighlighter" class="brush: js; collapse: true">
+				// This includes two helper functions, log() and pad()
+
+				//<![CDATA[
+					// <div id="example" style="background-color: #2569DD;"></div>
+					// <input id="hex" value="2569DD" />
+					// <textarea id="callback-log" rows="20" cols="100"></textarea>
+				//]]>
+
+				var _ColorPicker = new CL.ColorPicker({
+					_mode:			"floating",
+					_uiImageURL:	"ui.png"
+				});
+
+				_ColorPicker.registerCallback("change",function (_colorPickerData) {
+					$("example").style.background	= ("#" + _colorPickerData._hex);
+					$("hex").value					= _colorPickerData._hex;
+				});
+
+				_ColorPicker.registerRelatedElement("example");
+				Event.observe("example","click",function(_event) {
+					_ColorPicker.setColor("hex",$("hex").value);
+					if (_ColorPicker._status === "hidden") {
+						_ColorPicker.showAtClickEvent(_event,400,10);
+					}
+				});
+
+				_ColorPicker.registerRelatedElement("hex");
+				Event.observe("hex","click",function(_event) {
+					_ColorPicker.setColor("hex",$("hex").value);
+					if (_ColorPicker._status === "hidden") {
+						_ColorPicker.showAtClickEvent(_event,400,10);
+					}
+				});
+				_ColorPicker.registerCallback("change",function(_colorPickerData) {
+					log("change",_colorPickerData);
+				});
+
+				_ColorPicker.registerCallback("change-start",function(_colorPickerData) {
+					log("change-start",_colorPickerData);
+				});
+
+				_ColorPicker.registerCallback("change-end",function(_colorPickerData) {
+					log("change-end",_colorPickerData);
+				});
+
+				_ColorPicker.registerCallback("move",function(_colorPickerData) {
+					log("move",_colorPickerData);
+				});
+
+				_ColorPicker.registerCallback("move-start",function(_colorPickerData) {
+					log("move-start",_colorPickerData);
+				});
+
+				_ColorPicker.registerCallback("move-end",function(_colorPickerData) {
+					log("move-end",_colorPickerData);
+				});
+
+				_ColorPicker.registerCallback("show",function(_colorPickerData) {
+					log("show",_colorPickerData);
+				});
+
+				_ColorPicker.registerCallback("hide",function(_colorPickerData) {
+					log("hide",_colorPickerData);
+				});
+
+				function log(_eventType,_data) {
+					var _buffer = pad(_eventType,"change-start".length + 2," ");
+
+					if (["change","change-start","change-end"].indexOf(_eventType) === -1) {
+						_buffer += "{_x: " + _data._x.toString() + ",_y: " + _data._y.toString() + "}";
+					} else {
+						var _rgb	= [(Math.round(_data._rgb[0] * 1000) / 1000),(Math.round(_data._rgb[1] * 1000) / 1000),(Math.round(_data._rgb[2] * 1000) / 1000),].join(",");
+						var _hsv	= [(Math.round(_data._hsv[0] * 1000) / 1000),(Math.round(_data._hsv[1] * 1000) / 1000),(Math.round(_data._hsv[2] * 1000) / 1000),].join(",");
+						_buffer		+= "{_hex: \"" + _data._hex + "\",_rgb: " + _rgb + ",_hsv: " + _hsv + "}";
+					}
+
+					$("callback-log").value = (_buffer + "\n" + $("callback-log").value);
+				}
+
+				function pad(_str,_length,_char) {
+					while (_str.length < _length) {
+						_str += _char;
+					}
+
+					return _str;
+				}</script>
+		</div>
+		<hr />
+
+		<!-- ----------------------------------------------------------------- Example with _hideOnOutsideMouseDown set to false ----------------------------------------------------------------- -->
+		<h2>Example with <code>_hideOnOutsideMouseDown</code> set to <code>false</code></h2>
+		<div class="example">
+			<p>You can optionally set the picker to stay visible when elements outside the picker are clicked. By default the behavior is to close the picker.</p>
+			<p>To set up the picker to stay open until the (X) button is closed, set this argument like so: <code>_hideOnOutsideMouseDown: true</code></p>
+			<script type="syntaxhighlighter" class="brush: js; highlight: 4">
+				var _ColorPicker = new CL.ColorPicker({
+					_mode:						"floating",
+					_uiImageURL:				"ui.png",
+					_hideOnOutsideMouseDown:	false
+				});</script>
+
+			<div id="example_5" class="color" style="background-color: #2569DD;"></div>
+			<input id="hex_5" class="hex" value="2569DD" />
+			<div class="clear"></div>
+
+			<script type="text/javascript">
+				//<![CDATA[
+				_ColorPicker_noAutoHide.registerRelatedElement("example_5");
+				Event.observe("example_5","click",function(_event) {
+					_boxID = 5;
+
+					_ColorPicker_noAutoHide.setColor("hex",$("hex_5").value);
+					if (_ColorPicker_noAutoHide._status === "hidden") {
+						_ColorPicker_noAutoHide.showAtClickEvent(_event,-50,10);
+					}
+				});
+
+				_ColorPicker_noAutoHide.registerRelatedElement("hex_5");
+				Event.observe("hex_5","click",function(_event) {
+					_boxID = 5;
+					_ColorPicker_noAutoHide.setColor("hex",$("hex_5").value);
+					if (_ColorPicker_noAutoHide._status === "hidden") {
+						_ColorPicker_noAutoHide.showAtClickEvent(_event,-50,10);
+					}
+				});
+				//]]>
+			</script>
+
+			<script type="syntaxhighlighter" class="brush: js; collapse: true">
+				//<![CDATA[
+					// <div id="example" style="background-color: #2569DD;"></div>
+					// <input id="hex" value="2569DD" />
+				//]]>
+
+				var _ColorPicker = new CL.ColorPicker({
+					_mode:						"floating",
+					_uiImageURL:				"ui.png",
+					_hideOnOutsideMouseDown:	false
+				});
+
+				_ColorPicker.registerCallback("change",function (_colorPickerData) {
+					$("example").style.background	= ("#" + _colorPickerData._hex);
+					$("hex").value					= _colorPickerData._hex;
+				});
+
+
+				_ColorPicker.registerRelatedElement("example");
+				Event.observe("example","click",function(_event) {
+					_ColorPicker.setColor("hex",$("hex").value);
+					if (_ColorPicker._status === "hidden") {
+						_ColorPicker.showAtClickEvent(_event,-50,10);
+					}
+				});
+
+				_ColorPicker.registerRelatedElement("hex");
+				Event.observe("hex","click",function(_event) {
+					_ColorPicker.setColor("hex",$("hex").value);
+					if (_ColorPicker._status === "hidden") {
+						_ColorPicker.showAtClickEvent(_event,-50,10);
+					}
+				});</script>
+		</div>
+		<hr />
+
+		<!-- ----------------------------------------------------------------- Embedded Example ----------------------------------------------------------------- -->
+		<h2>Embedded Example</code></h2>
+		<div class="example">
+			<p>Here the color picker is embedded in the UI and cannot be closed or dragged. It also uses the <code>onReady</code> argument to set the initial color for the picker.</p>
+
+			<div id="example_6" class="color" style="background-color: #2569DD;"></div>
+			<input id="hex_6" class="hex" value="2569DD" />
+			<div class="clear"></div>
+			<div id="embedded-example" style="position: relative;"></div>
+
+			<script type="text/javascript">
+				//<![CDATA[
+				var _ColorPicker_embedded = new CL.ColorPicker({
+					_mode:					"embedded",
+					_uiImageURL:			"ui.png",
+					_embeddedContainerID:	"embedded-example",
+					onReady:				function() {
+						this.setColor("hex","2569DD");
+					}
+				});
+
+				_ColorPicker_embedded.registerCallback("change",function (_colorPickerData) {
+					$("example_6").style.background	= ("#" + _colorPickerData._hex);
+					$("hex_6").value				= _colorPickerData._hex;
+				});
+				//]]>
+			</script>
+			<script type="syntaxhighlighter" class="brush: js; collapse: true">
+				//<![CDATA[
+					// <div id="example" style="background-color: #2569DD;"></div>
+					// <input id="hex" value="2569DD" />
+					// <div id="embedded-example" style="position: relative;"></div> -- this must be relative!
+				//]]>
+
+				var _ColorPicker = new CL.ColorPicker({
+					_mode:					"embedded",
+					_uiImageURL:			"ui.png",
+					_embeddedContainerID:	"embedded-example",
+					onReady:				function() {
+						this.setColor("hex","2569DD");
+					}
+				});
+
+				_ColorPicker.registerCallback("change",function (_colorPickerData) {
+					$("example").style.background	= ("#" + _colorPickerData._hex);
+					$("hex").value					= _colorPickerData._hex;
+				});</script>
+		</div>
+		<script type="text/javascript">SyntaxHighlighter.all();</script>
+	</body>
+</html>
