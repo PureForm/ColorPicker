@@ -174,6 +174,7 @@
 		<h2>Initial Color Example</h2>
 		<div class="example">
 			<p>Here we pass an initial color to the picker [#2569DD] and don't change the position of the picker when a related element is clicked.</p>
+			<p>I've told the color picker which elements elements are related by calling the <code>_ColorPicker.registerRelatedElement("id_of_related_element");</code> method.</p>
 
 			<div id="example_2" class="color" style="background-color: #2569DD;"></div>
 			<input id="hex_2" class="hex" value="2569DD" />
@@ -201,6 +202,10 @@
 					if (_ColorPicker._status === "hidden") {
 						_ColorPicker.showAtClickEvent(_event,-50,10);
 					}
+				});
+				Event.observe("hex_2","keyup",function(_event) {
+					_boxID = 2;
+					_ColorPicker.setColor("hex",$("hex_2").value);
 				});
 				//]]>
 			</script>
@@ -237,6 +242,9 @@
 					if (_ColorPicker._status === "hidden") {
 						_ColorPicker.showAtClickEvent(_event,-50,10);
 					}
+				});
+				Event.observe("hex","keyup",function(_event) {
+					_ColorPicker.setColor("hex",$("hex").value);
 				});</script>
 		</div>
 		<hr />
@@ -281,6 +289,10 @@
 						_ColorPicker.showAtClickEvent(_event,-50,10);
 					}
 				});
+				Event.observe("hex_3","keyup",function(_event) {
+					_boxID = 3;
+					_ColorPicker.setColor("hex",$("hex_3").value);
+				});
 				//]]>
 			</script>
 			<script type="syntaxhighlighter" class="brush: js; collapse: true">
@@ -319,6 +331,9 @@
 					if (_ColorPicker._status === "hidden") {
 						_ColorPicker.showAtClickEvent(_event,-50,10);
 					}
+				});
+				Event.observe("hex","keyup",function(_event) {
+					_ColorPicker.setColor("hex",$("hex").value);
 				});</script>
 		</div>
 		<hr />
@@ -326,8 +341,8 @@
 		<!-- ----------------------------------------------------------------- Example with RGB and HSV ----------------------------------------------------------------- -->
 		<h2>Example with event callbacks</h2>
 		<div class="example">
-			<p>You can leverage the pickers several event callbacks to tie into the picker's internally called events. This is useful for updating data and elements exactly when they need to be.</p>
-			<p>The most common callback would be the <strong><code>change</code></strong> callback. This is called whenever a value is changed on the picker.</p>
+			<p>You can leverage the picker's several event callbacks to tie into the its internally called events. This is useful for updating data and elements exactly when they need to be.</p>
+			<p>The most common callback would be the <strong><code>change</code></strong> callback. This is called whenever a value is changed in the picker.</p>
 			<script type="syntaxhighlighter" class="brush: js">
 				_ColorPicker.registerCallback("change",function(_colorPickerData) {
 					/*
@@ -378,6 +393,11 @@
 						_ColorPicker_callbacks.showAtClickEvent(_event,400,10);
 					}
 				});
+				Event.observe("hex_4","keyup",function(_event) {
+					_boxID = 4;
+					_ColorPicker_callbacks.setColor("hex",$("hex_4").value);
+				});
+
 				_ColorPicker_callbacks.registerCallback("change",function(_colorPickerData) {
 					log("change",_colorPickerData);
 				});
@@ -467,6 +487,10 @@
 						_ColorPicker.showAtClickEvent(_event,400,10);
 					}
 				});
+				Event.observe("hex","keyup",function(_event) {
+					_ColorPicker.setColor("hex",$("hex").value);
+				});
+
 				_ColorPicker.registerCallback("change",function(_colorPickerData) {
 					log("change",_colorPickerData);
 				});
@@ -527,7 +551,7 @@
 		<h2>Example with <code>_hideOnOutsideMouseDown</code> set to <code>false</code></h2>
 		<div class="example">
 			<p>You can optionally set the picker to stay visible when elements outside the picker are clicked. By default the behavior is to close the picker.</p>
-			<p>To set up the picker to stay open until the (X) button is closed, set this argument like so: <code>_hideOnOutsideMouseDown: true</code></p>
+			<p>To set up the picker to stay open until the (X) button is clicked, set this argument like so: <code>_hideOnOutsideMouseDown: true</code></p>
 			<script type="syntaxhighlighter" class="brush: js; highlight: 4">
 				var _ColorPicker = new CL.ColorPicker({
 					_mode:						"floating",
@@ -558,6 +582,10 @@
 					if (_ColorPicker_noAutoHide._status === "hidden") {
 						_ColorPicker_noAutoHide.showAtClickEvent(_event,-50,10);
 					}
+				});
+				Event.observe("hex_5","keyup",function(_event) {
+					_boxID = 5;
+					_ColorPicker_noAutoHide.setColor("hex",$("hex_5").value);
 				});
 				//]]>
 			</script>
@@ -594,6 +622,9 @@
 					if (_ColorPicker._status === "hidden") {
 						_ColorPicker.showAtClickEvent(_event,-50,10);
 					}
+				});
+				Event.observe("hex","keyup",function(_event) {
+					_ColorPicker.setColor("hex",$("hex").value);
 				});</script>
 		</div>
 		<hr />
@@ -623,6 +654,9 @@
 					$("example_6").style.background	= ("#" + _colorPickerData._hex);
 					$("hex_6").value				= _colorPickerData._hex;
 				});
+				Event.observe("hex_6","keyup",function(_event) {
+					_ColorPicker_embedded.setColor("hex",$("hex_6").value);
+				});
 				//]]>
 			</script>
 			<script type="syntaxhighlighter" class="brush: js; collapse: true">
@@ -644,6 +678,9 @@
 				_ColorPicker.registerCallback("change",function (_colorPickerData) {
 					$("example").style.background	= ("#" + _colorPickerData._hex);
 					$("hex").value					= _colorPickerData._hex;
+				});
+				Event.observe("hex","keyup",function(_event) {
+					_ColorPicker.setColor("hex",$("hex").value);
 				});</script>
 		</div>
 		<script type="text/javascript">SyntaxHighlighter.all();</script>
